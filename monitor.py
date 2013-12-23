@@ -41,7 +41,7 @@ def screen_darks( dark_list ):
 
         if not len(counts):
             empty_file.write('{}\n'.format(darkfile) )
-        elif counts.max() > counts.mean() + 3 * counts.std():
+        elif counts.std()/counts.mean() > .3:
             variant_file.write( '{}\n'.format(darkfile) )
         else:
             normal_file.write( '{}\n'.format(darkfile) )
