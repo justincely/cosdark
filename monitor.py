@@ -8,6 +8,7 @@ except ImportError: import pyfits
 import numpy as np
 import glob
 import os
+from superdark import SuperDark
 
 data_dir = '/grp/hst/cos/Monitors/dark_2/data/'
 
@@ -50,7 +51,36 @@ def screen_darks( dark_list ):
     normal_file.close()
 
 
+def create_superdarks( file_list ):
+    print 'Creating superdarks'
+    all_mjd = [pyfits.getval(item, 'EXPSTART', ext=1 ) for item in file_list ]
+    
+    file_list = np.array( file_list )
+    all_mjd = np.array( all_mjd )
+
+    step = 30
+    first_mjd = int(all_mjd.min())
+    end_mjd = int(all_mjd.max())
+    print 'Running from ', first_mjd, end_mjd
+
+    for start in range( first_mjd, end_mjd, step)[:-1]:
+        print start, '-->', start+step
+        file_index = np.where( (all_mjd > start) &
+                               (all_mjd < start+step) )[0]
+        if not len( file_index ):
+            print 'WARNING, no files found for interval'
+ 
+        dark_reffile = SuperDark( file_list[ file_index ] )
+        output = '{}_{}_drk.fits'.format( start, start+step )
+        dark_reffile.write( outname=output )
+        pyfits.setval( output, 'DATASTRT', ext=0, value=start )
+        pyfits.setval( output, 'DATAEND', ext=0, value=start+step )
+        
+
 if __name__ == "__main__":
     all_darks = glob.glob( os.path.join( data_dir, '*corrtag*.fits' ) )
     screen_darks( all_darks )
 
+    baseline_darks = np.genfromtxt('normal.txt', dtype=None )
+    create_superdarks( baseline_darks )
+    
